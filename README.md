@@ -1,5 +1,7 @@
 # LLM Orchestra Service
 
+[🇷🇺 Перейти на русский](README_RU.md) | [🇺🇸 English (current)](README.md)
+
 LLM Orchestra Service is a FastAPI-based web application designed to orchestrate and manage Large Language Model (LLM) tasks. The service provides a REST API for creating, managing, and monitoring LLM tasks with asynchronous processing capabilities using Celery and Redis.
 
 ## Features
