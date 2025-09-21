@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
 from app.db.models import TaskStatus
+from datetime import datetime
 
 class TaskCreate(BaseModel):
     task_type: str
@@ -19,6 +20,8 @@ class TaskResponse(BaseModel):
     prompt: str
     status: TaskStatus
     result: Optional[str] = None
+    created_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     
     class Config:
         orm_mode = True

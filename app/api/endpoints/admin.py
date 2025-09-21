@@ -159,6 +159,29 @@ async def get_task_details(
     
     return task
 
+@router.delete("/tasks/{task_id}")
+async def delete_task(
+    task_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    """
+    Удаление задания из системы.
+    Доступ: Только для администратора.
+    """
+    # Find task
+    result = await db.execute(select(Task).filter(Task.id == task_id))
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+    
+    await db.delete(task)
+    await db.commit()
+    return {"message": "Task deleted successfully"}
+
 # Statistics and Metrics Endpoints
 
 @router.get("/stats/tasks/by_status", response_model=TaskStatsByStatus)

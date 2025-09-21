@@ -1,8 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, Text, UUID, Enum
+from sqlalchemy import Column, String, Text, UUID, Enum, DateTime
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 import enum
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -27,3 +28,7 @@ class Task(Base):
     prompt = Column(Text)
     status = Column(Enum(TaskStatus), default=TaskStatus.PENDING)
     result = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    # Add created_at and completed_at fields for better task tracking
+    # These fields might be useful for the UI
