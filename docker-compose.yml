@@ -11,7 +11,10 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - SECRET_KEY=your-secret-key
-      - OPENAI_API_KEY=your-openai-api-key
+      - LLM_PROVIDER=ollama
+      - LLM_MODEL=llama3
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      # - OPENAI_API_KEY=your-openai-api-key  # Only needed if using OpenAI
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=admin
     depends_on:
@@ -54,7 +57,10 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - SECRET_KEY=your-secret-key
-      - OPENAI_API_KEY=your-openai-api-key
+      - LLM_PROVIDER=ollama
+      - LLM_MODEL=codellama:7b
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      # - OPENAI_API_KEY=your-openai-api-key  # Only needed if using OpenAI
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=admin
     depends_on:

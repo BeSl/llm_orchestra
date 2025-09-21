@@ -4,11 +4,9 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Activity, BarChart3, Settings, Plus, Download, LogOut } from "lucide-react"
+import { Users, Activity, BarChart3, Plus, Download, LogOut } from "lucide-react"
 import { UserManagement } from "./user-management"
 import { TaskMonitoring } from "./task-monitoring"
-import { StatisticsCharts } from "./statistics-charts"
-import { SettingsModal } from "./settings-modal"
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -16,7 +14,6 @@ interface AdminDashboardProps {
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview")
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,10 +29,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Настройки
-            </Button>
             <Button variant="outline" size="sm" onClick={onLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Выход
@@ -76,14 +69,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               <Activity className="h-4 w-4 mr-2" />
               Задачи
             </Button>
-            <Button
-              variant={activeTab === "analytics" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("analytics")}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Аналитика
-            </Button>
           </nav>
         </aside>
 
@@ -92,12 +77,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           {activeTab === "overview" && <OverviewContent />}
           {activeTab === "users" && <UserManagement />}
           {activeTab === "tasks" && <TaskMonitoring />}
-          {activeTab === "analytics" && <StatisticsCharts />}
         </main>
       </div>
-
-      {/* Settings Modal */}
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   )
 }

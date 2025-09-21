@@ -7,7 +7,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
-    OPENAI_API_KEY: str
+    # OPENAI_API_KEY: str  # Not needed if Ollama is default
+    LLM_PROVIDER: str = "ollama"  # Default LLM provider
+    LLM_MODEL: str = "llama3"  # Default model for Ollama
+    OLLAMA_BASE_URL: str = "http://localhost:11434"  # Ollama server URL
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "admin"
 
