@@ -113,43 +113,6 @@ export function useTasks() {
   }
 }
 
-// Custom hook for fetching statistics
-export function useStatistics() {
-  const [statusStats, setStatusStats] = useState<TaskStats | null>(null)
-  const [typeStats, setTypeStats] = useState<TaskTypeStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchStatistics = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      // Fetch both statistics in parallel
-      const [statusData, typeData] = await Promise.all([mockApi.getTaskStatsByStatus(), mockApi.getTaskStatsByType()])
-
-      setStatusStats(statusData)
-      setTypeStats(typeData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch statistics")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchStatistics()
-  }, [])
-
-  return {
-    statusStats,
-    typeStats,
-    loading,
-    error,
-    refetch: fetchStatistics,
-  }
-}
-
 // Generic hook for API calls with loading states
 export function useApiCall<T>(apiFunction: () => Promise<T>, dependencies: any[] = []) {
   const [data, setData] = useState<T | null>(null)

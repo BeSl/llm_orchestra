@@ -15,6 +15,7 @@ LLM Orchestra Service is a FastAPI-based web application designed to orchestrate
 - Admin panel endpoints for user and task management
 - Web-based admin UI for easy system management
 - Automatic admin user creation
+- Multiple LLM provider support (Ollama as default)
 
 ## Project Structure
 
@@ -71,6 +72,7 @@ LLM Orchestra Service is a FastAPI-based web application designed to orchestrate
 - PostgreSQL
 - Redis
 - Docker (optional, for containerization)
+- Ollama (for local LLM support)
 
 ## Installation
 
@@ -120,6 +122,32 @@ LLM Orchestra Service is a FastAPI-based web application designed to orchestrate
    ```bash
    alembic upgrade head
    ```
+
+## LLM Provider Configuration
+
+The service supports multiple LLM providers with Ollama as the default:
+
+### Ollama (Default)
+1. Install Ollama from https://ollama.com/
+2. Pull a model (e.g., llama3):
+   ```bash
+   ollama pull llama3
+   ```
+3. Start the Ollama service:
+   ```bash
+   ollama serve
+   ```
+
+### OpenAI (Alternative)
+1. Get an API key from OpenAI
+2. Set the `OPENAI_API_KEY` environment variable
+3. Set `LLM_PROVIDER=openai` in your environment
+
+### Configuration Variables
+- `LLM_PROVIDER`: The LLM provider to use (default: "ollama")
+- `LLM_MODEL`: The model to use (default: "llama3" for Ollama)
+- `OLLAMA_BASE_URL`: The base URL for Ollama (default: "http://localhost:11434")
+- `OPENAI_API_KEY`: API key for OpenAI (only needed if using OpenAI)
 
 ## Running the Application
 
@@ -182,7 +210,7 @@ The service includes a comprehensive set of admin endpoints for managing users a
 - `GET /admin/tasks/all` - Get all tasks in the system (admin only)
 - `GET /admin/tasks/{task_id}` - Get details of a specific task (admin only)
 
-### Statistics and Metrics
+### Statistics
 - `GET /admin/stats/tasks/by_status` - Get task counts by status (admin only)
 - `GET /admin/stats/tasks/by_type` - Get task counts by type (admin only)
 
@@ -192,8 +220,7 @@ The project includes a web-based admin dashboard built with Next.js that provide
 
 - Managing users (create, update, delete)
 - Monitoring tasks (view status, details)
-- Viewing system statistics and metrics
-- Configuring system settings
+- Viewing system statistics
 
 The UI features JWT-based authentication that integrates with the backend API. On first login, use the admin credentials configured in your environment variables.
 
@@ -222,7 +249,10 @@ To test the authentication flow:
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time
 - `CELERY_BROKER_URL`: Redis URL for Celery broker
 - `CELERY_RESULT_BACKEND`: Redis URL for Celery results
-- `OPENAI_API_KEY`: OpenAI API key for LLM access
+- `LLM_PROVIDER`: LLM provider to use (default: "ollama")
+- `LLM_MODEL`: Model to use (default: "llama3")
+- `OLLAMA_BASE_URL`: Base URL for Ollama service (default: "http://localhost:11434")
+- `OPENAI_API_KEY`: OpenAI API key for LLM access (only needed if using OpenAI)
 - `ADMIN_USERNAME`: Username for the default admin user (default: admin)
 - `ADMIN_PASSWORD`: Password for the default admin user (default: admin)
 - `NEXT_PUBLIC_API_URL`: API URL for the admin UI (in UI .env file)
@@ -240,6 +270,10 @@ To test the authentication flow:
    alembic revision --autogenerate -m "Description of changes"
    alembic upgrade head
    ```
+
+5. **LLM Provider Issues**: 
+   - For Ollama: Ensure the Ollama service is running and the specified model is available
+   - For OpenAI: Ensure the API key is valid and has sufficient credits
 
 ## Documentation Languages
 

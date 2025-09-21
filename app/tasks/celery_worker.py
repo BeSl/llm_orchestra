@@ -36,7 +36,7 @@ def process_llm_task(self, task_id: str):
         db.commit()
 
         # Инициализация сервиса и запуск задачи
-        llm_service = LLMService(api_key=settings.OPENAI_API_KEY)
+        llm_service = LLMService()  # Updated to use new constructor without API key
         result = llm_service.run_task(task_type=task.task_type, prompt=task.prompt)
 
         # Обновляем статус и результат
