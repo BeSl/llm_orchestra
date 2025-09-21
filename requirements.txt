@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+pydantic
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+celery[redis] # Или celery[sqs] для SQS, celery[amqp] для RabbitMQ
+redis
+langchain
+langchain-community
+openai # Или другие LLM-библиотеки, например, huggingface_hub
+psycopg2-binary # Для подключения к PostgreSQL
+alembic # Для миграций
+python-multipart # Для обработки форм данных
