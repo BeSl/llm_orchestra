@@ -1,6 +1,9 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
+import { apiClient } from "@/lib/api"
+import { AuthService } from "@/services/auth-service"
+import { useRouter } from "next/navigation"
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -12,31 +15,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<{ username: string; role: string } | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Check if there's a stored token on initial load
     const token = localStorage.getItem("authToken")
-    if (token) {
-      // Verify token with backend
-      verifyToken(token)
+    if (token && AuthService.verifyToken(token)) {
+      // Fetch user info
+      fetchUserInfo(token)
     } else {
       setLoading(false)
     }
   }, [])
 
-  const verifyToken = async (token: string) => {
+  const fetchUserInfo = async (token: string) => {
     try {
-      // In a real implementation, you would verify the token with the backend
-      // For now, we'll just set the user as authenticated
+      // Set temporary user data from token
+      const username = AuthService.getUsernameFromToken(token)
+      if (username) {
+        setUser({ username, role: "admin" }) // Default to admin, will be updated with real data
+        setIsAuthenticated(true)
+      }
+      
+      // Fetch real user data from API
+      const userData = await apiClient.getCurrentUser()
+      setUser({ username: userData.username, role: userData.role })
       setIsAuthenticated(true)
-      setUser({ username: "admin", role: "admin" }) // This would come from token verification
     } catch (error) {
+      console.error("Error fetching user info:", error)
       // Token is invalid, remove it
       localStorage.removeItem("authToken")
+      setIsAuthenticated(false)
+      setUser(null)
     } finally {
       setLoading(false)
     }
@@ -44,39 +58,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const baseUrl = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL 
-        ? process.env.NEXT_PUBLIC_API_URL 
-        : "http://localhost:8000"
-        
-      const response = await fetch(`${baseUrl}/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          username,
-          password,
-        } as any),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        const token = data.access_token
-        
-        // Store token
-        localStorage.setItem("authToken", token)
-        
-        // Set user data
-        setIsAuthenticated(true)
-        setUser({ username, role: "admin" }) // In a real app, this would come from a user info endpoint
-        
-        return { success: true }
-      } else {
-        const errorData = await response.json()
-        return { success: false, error: errorData.detail || "Неверные учетные данные" }
+      const authResponse = await apiClient.login(username, password)
+      const token = authResponse.access_token
+      
+      // Store token
+      localStorage.setItem("authToken", token)
+      
+      // Set user data from token first to provide immediate feedback
+      setUser({ username, role: "admin" }) // Default to admin role
+      setIsAuthenticated(true)
+      
+      // Then fetch real user data from API
+      try {
+        const userData = await apiClient.getCurrentUser()
+        setUser({ username: userData.username, role: userData.role })
+      } catch (error) {
+        console.error("Error fetching user info after login:", error)
+        // If we can't fetch user info, we'll keep the temporary data
+        // But we should check if this is a critical error
+        // For now, we'll assume the login was successful even if we can't fetch user info
       }
+      
+      // Redirect to main page after successful login
+      router.push("/")
+      
+      return { success: true }
     } catch (error: any) {
-      return { success: false, error: "Ошибка подключения к серверу" }
+      // Make sure we're not authenticated if login fails
+      setIsAuthenticated(false)
+      setUser(null)
+      localStorage.removeItem("authToken")
+      
+      // Provide a more user-friendly error message
+      let errorMessage = "Неверные учетные данные"
+      if (error.message && error.message !== "Invalid credentials") {
+        errorMessage = error.message
+      }
+      
+      return { success: false, error: errorMessage }
+    } finally {
+      setLoading(false)
     }
   }
 

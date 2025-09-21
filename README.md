@@ -166,7 +166,11 @@ LLM Orchestra Service is a FastAPI-based web application designed to orchestrate
 
 The service includes a comprehensive set of admin endpoints for managing users and monitoring tasks:
 
+### Authentication
+- `POST /token` - Obtain access token with username and password
+
 ### User Management
+- `GET /users/me` - Get current user information
 - `GET /admin/users` - Get all users (admin only)
 - `POST /admin/users` - Create a new user (admin only)
 - `PUT /admin/users/{user_id}` - Update user details (admin only)
@@ -189,15 +193,24 @@ The project includes a web-based admin dashboard built with Next.js that provide
 - Viewing system statistics and metrics
 - Configuring system settings
 
+The UI features JWT-based authentication that integrates with the backend API. On first login, use the admin credentials configured in your environment variables.
+
+## Testing Authentication
+
+To test the authentication flow:
+
+1. Start the application using either development mode or Docker
+2. Navigate to `http://localhost:3000` to access the admin UI
+3. Log in with the admin credentials (default: username `admin`, password `admin`)
+4. If you need to test authentication programmatically, you can use the `/token` endpoint directly
+
 ## Usage
 
 1. On first startup, an admin user will be automatically created with the credentials from environment variables
-2. Authenticate using the `/auth/token` endpoint to get a JWT token
-3. Use the token to access protected endpoints
-4. Create tasks using the `/tasks` endpoint
-5. Monitor task status using the `/tasks/{task_id}` endpoint
-6. Admins can use the `/admin/*` endpoints for system management
-7. Access the admin UI at `http://localhost:3000` for a graphical interface
+2. Navigate to `http://localhost:3000` to access the admin UI
+3. Log in with the admin credentials
+4. Use the admin panel to manage users and monitor tasks
+5. Create additional users as needed through the admin interface
 
 ## Environment Variables
 

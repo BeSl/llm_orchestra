@@ -1,9 +1,20 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import auth, tasks, users
 from app.api.endpoints.admin import router as admin_router
 from app.core.startup import create_admin_user_if_not_exists
 
 app = FastAPI(title="LLM Orchestrator Service")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://ui:3000"],  # Allow both local development and Docker container
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Authorization"],
+)
 
 # Startup event to create admin user if not exists
 @app.on_event("startup")

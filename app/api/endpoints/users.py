@@ -6,11 +6,20 @@ from uuid import UUID
 
 from app.db.session import get_db
 from app.db.models import User
-from app.api.deps import get_admin_user
+from app.api.deps import get_admin_user, get_current_user
 from app.schemas.users import UserCreate, User as UserSchema
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+@router.get("/users/me", response_model=UserSchema)
+def read_user_me(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Получение информации о текущем пользователе.
+    """
+    return current_user
 
 @router.post("/users", response_model=UserSchema, status_code=status.HTTP_201_CREATED)
 def create_user(

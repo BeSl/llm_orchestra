@@ -1,14 +1,11 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Activity, Eye, EyeOff } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
 
 interface LoginFormProps {
@@ -36,10 +33,10 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Ошибка",
-        description: "Произошла ошибка при попытке входа",
+        description: "Произошла ошибка при попытке входа: " + (error.message || "Неизвестная ошибка"),
         variant: "destructive",
       })
     } finally {

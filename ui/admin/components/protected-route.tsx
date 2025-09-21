@@ -1,24 +1,22 @@
 "use client"
 
-import { AdminDashboard } from "@/components/admin-dashboard"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-export default function Home() {
-  const { isAuthenticated, logout, loading } = useAuth()
+interface ProtectedRouteProps {
+  children: React.ReactNode
+}
+
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { isAuthenticated, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isAuthenticated && !loading) {
       router.push("/login")
     }
   }, [isAuthenticated, loading, router])
-
-  const handleLogout = () => {
-    logout()
-    router.push("/login")
-  }
 
   if (loading) {
     return (
@@ -32,5 +30,5 @@ export default function Home() {
     return null
   }
 
-  return <AdminDashboard onLogout={handleLogout} />
+  return <>{children}</>
 }
