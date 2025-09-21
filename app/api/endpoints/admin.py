@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from uuid import UUID
 from collections import Counter
@@ -10,6 +10,7 @@ from app.schemas.users import User as UserSchema, UserCreate, UserUpdate
 from app.schemas.tasks import TaskResponse, TaskStatsByStatus, TaskStatsByType
 from app.api.deps import get_admin_user
 from passlib.context import CryptContext
+from sqlalchemy import select
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -17,21 +18,22 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # User Management Endpoints
 
 @router.get("/users", response_model=List[UserSchema])
-def get_all_users(
-    db: Session = Depends(get_db),
+async def get_all_users(
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
     Получение списка всех пользователей в системе.
     Доступ: Только для администратора.
     """
-    users = db.query(User).all()
+    result = await db.execute(select(User))
+    users = result.scalars().all()
     return users
 
 @router.post("/users", response_model=UserSchema, status_code=status.HTTP_201_CREATED)
-def create_user(
+async def create_user(
     user_in: UserCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
@@ -39,7 +41,8 @@ def create_user(
     Доступ: Только для администратора.
     """
     # Check if user already exists
-    existing_user = db.query(User).filter(User.username == user_in.username).first()
+    result = await db.execute(select(User).filter(User.username == user_in.username))
+    existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -56,15 +59,15 @@ def create_user(
         role=user_in.role
     )
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 @router.put("/users/{user_id}", response_model=UserSchema)
-def update_user(
+async def update_user(
     user_id: str,
     user_update: UserUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
@@ -72,7 +75,8 @@ def update_user(
     Доступ: Только для администратора.
     """
     # Find user
-    user = db.query(User).filter(User.id == user_id).first()
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -86,14 +90,14 @@ def update_user(
     if user_update.password is not None:
         user.hashed_password = pwd_context.hash(user_update.password)
     
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 @router.delete("/users/{user_id}")
-def delete_user(
+async def delete_user(
     user_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
@@ -101,7 +105,8 @@ def delete_user(
     Доступ: Только для администратора.
     """
     # Find user
-    user = db.query(User).filter(User.id == user_id).first()
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -115,35 +120,37 @@ def delete_user(
             detail="Cannot delete yourself"
         )
     
-    db.delete(user)
-    db.commit()
+    await db.delete(user)
+    await db.commit()
     return {"message": "User deleted successfully"}
 
 # Task Monitoring Endpoints
 
 @router.get("/tasks/all", response_model=List[TaskResponse])
-def get_all_tasks(
-    db: Session = Depends(get_db),
+async def get_all_tasks(
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
     Получение полного списка всех заданий в системе.
     Доступ: Только для администратора.
     """
-    tasks = db.query(Task).all()
+    result = await db.execute(select(Task))
+    tasks = result.scalars().all()
     return tasks
 
 @router.get("/tasks/{task_id}", response_model=TaskResponse)
-def get_task_details(
+async def get_task_details(
     task_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
     Получение деталей конкретного задания, включая результат или ошибку.
     Доступ: Администратор может получить доступ к любому заданию.
     """
-    task = db.query(Task).filter(Task.id == task_id).first()
+    result = await db.execute(select(Task).filter(Task.id == task_id))
+    task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -155,15 +162,16 @@ def get_task_details(
 # Statistics and Metrics Endpoints
 
 @router.get("/stats/tasks/by_status", response_model=TaskStatsByStatus)
-def get_task_stats_by_status(
-    db: Session = Depends(get_db),
+async def get_task_stats_by_status(
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
     Получение количества заданий по каждому статусу.
     Доступ: Только для администратора.
     """
-    tasks = db.query(Task).all()
+    result = await db.execute(select(Task))
+    tasks = result.scalars().all()
     status_counts = Counter(task.status for task in tasks)
     
     return TaskStatsByStatus(
@@ -174,15 +182,16 @@ def get_task_stats_by_status(
     )
 
 @router.get("/stats/tasks/by_type", response_model=TaskStatsByType)
-def get_task_stats_by_type(
-    db: Session = Depends(get_db),
+async def get_task_stats_by_type(
+    db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
     """
     Получение количества заданий по их типу.
     Доступ: Только для администратора.
     """
-    tasks = db.query(Task).all()
+    result = await db.execute(select(Task))
+    tasks = result.scalars().all()
     type_counts = Counter(task.task_type for task in tasks)
     
     return TaskStatsByType(
