@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict
 from uuid import UUID
 from app.db.models import TaskStatus
 from datetime import datetime
@@ -7,6 +7,7 @@ from datetime import datetime
 class TaskCreate(BaseModel):
     task_type: str
     prompt: str
+    history: Optional[List[Dict[str, str]]] = None
 
 class TaskStatusResponse(BaseModel):
     task_id: str
@@ -22,6 +23,7 @@ class TaskResponse(BaseModel):
     result: Optional[str] = None
     created_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    history: Optional[List[Dict[str, str]]] = None
     
     class Config:
         orm_mode = True
@@ -36,4 +38,7 @@ class TaskStatsByType(BaseModel):
     summarization: int = 0
     translation: int = 0
     code_generation: int = 0
+    analyst: int = 0
+    interviewer: int = 0
+    programmer: int = 0
     # Add more task types as needed

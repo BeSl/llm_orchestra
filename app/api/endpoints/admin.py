@@ -220,5 +220,8 @@ async def get_task_stats_by_type(
     return TaskStatsByType(
         summarization=type_counts.get("summarization", 0),
         translation=type_counts.get("translation", 0),
-        code_generation=type_counts.get("code_generation", 0)
+        code_generation=type_counts.get("code_generation", 0),
+        analyst=type_counts.get("analyst", 0),
+        interviewer=type_counts.get("interviewer", 0),
+        programmer=type_counts.get("programmer", 0)
     )

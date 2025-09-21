@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 import enum
 from datetime import datetime
+import json
 
 Base = declarative_base()
 
@@ -30,5 +31,7 @@ class Task(Base):
     result = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
+    history = Column(Text, nullable=True)  # Store as JSON string
+    
     # Add created_at and completed_at fields for better task tracking
     # These fields might be useful for the UI

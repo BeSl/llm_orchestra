@@ -1,293 +1,155 @@
-# LLM Orchestra Service
+# LLM Orchestra
 
-[🇷🇺 Перейти на русский](README_RU.md) | [🇺🇸 English (current)](README.md)
+[🇷🇺 Перейти на русский](README_RU.md) | [🇺🇸 English (current)](README.md) | [<img src="https://img.shields.io/badge/README-CN-yellow" alt="CN" height="20">](README_CN.md)
 
-LLM Orchestra Service is a FastAPI-based web application designed to orchestrate and manage Large Language Model (LLM) tasks. The service provides a REST API for creating, managing, and monitoring LLM tasks with asynchronous processing capabilities using Celery and Redis.
+# LLM Orchestra
+
+LLM Orchestra is a multi-agent system that leverages Large Language Models (LLMs) to automate complex workflows. The system allows users to define and execute tasks that are processed by specialized AI agents, each with distinct roles and capabilities.
 
 ## Features
 
-- User authentication and authorization (JWT-based)
-- Task management for LLM operations
-- Asynchronous task processing with Celery and Redis
-- PostgreSQL database integration with SQLAlchemy
-- Docker containerization support
-- RESTful API design
-- Admin panel endpoints for user and task management
-- Web-based admin UI for easy system management
-- Automatic admin user creation
-- Multiple LLM provider support (Ollama as default)
+- **Multi-Agent Architecture**: Different AI agents (Analyst, Interviewer, Programmer) with specialized capabilities
+- **Task Management**: Create, monitor, and track tasks through their lifecycle
+- **Dialogue History**: Tasks can include conversation history for context-aware processing
+- **Admin Dashboard**: Web-based interface for administrators to manage users and monitor tasks
+- **RESTful API**: Comprehensive API for programmatic access to all system features
+- **Containerized Deployment**: Docker-based deployment for easy setup and scaling
+- **Asynchronous Processing**: Celery-based task queue for efficient background processing
+- **LLM Provider Support**: Configurable LLM provider (Ollama or OpenAI) with Ollama as default
 
-## Project Structure
+## System Architecture
 
 ```
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # Main FastAPI application
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── deps.py          # Dependencies for API endpoints
-│   │   ├── endpoints/
-│   │   │   ├── __init__.py
-│   │   │   ├── tasks.py     # Task-related endpoints
-│   │   │   ├── users.py     # User management endpoints
-│   │   │   ├── auth.py      # Authentication endpoints
-│   │   │   └── admin.py     # Admin endpoints for user/task management
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── config.py        # Application settings
-│   │   ├── security.py      # JWT and password hashing
-│   │   └── startup.py       # Application startup logic
-│   ├── db/
-│   │   ├── __init__.py
-│   │   ├── session.py       # Database session setup
-│   │   └── models.py        # Database models
-│   ├── schemas/
-│   │   ├── tasks.py         # Pydantic schemas for tasks
-│   │   └── users.py         # Pydantic schemas for users
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── llm_service.py   # LLM interaction logic
-│   └── tasks/
-│       ├── __init__.py
-│       └── celery_worker.py # Celery workers
-├── ui/
-│   └── admin/               # Next.js admin dashboard
-├── alembic/                 # Database migrations
-│   ├── versions/            # Migration scripts
-│   ├── env.py               # Alembic environment configuration
-│   └── script.py.mako       # Migration script template
-├── .env.example             # Environment variables example
-├── alembic.ini              # Alembic configuration
-├── Dockerfile               # Docker configuration
-├── docker-compose.yml       # Docker Compose configuration
-├── requirements.txt         # Python dependencies
-├── README.md                # English documentation
-└── README_RU.md             # Russian documentation
+┌─────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Client    │◄──►│  Web Server  │◄──►│  Database     │
+└─────────────┘    │ (FastAPI)    │    │ (PostgreSQL)  │
+                   └──────────────┘    └──────────────┘
+                          │
+                   ┌──────────────┐    ┌──────────────┐
+                   │ Task Queue   │◄──►│  Redis        │
+                   │ (Celery)     │    │ (Broker/Cache)│
+                   └──────────────┘    └──────────────┘
+                          │
+                   ┌──────────────┐
+                   │ LLM Services │
+                   │ (Ollama etc.)│
+                   └──────────────┘
 ```
 
-## Prerequisites
+## Task Types
 
+The system supports several types of tasks that can be processed by specialized agents:
+
+- **Summarization**: Text summarization tasks
+- **Translation**: Language translation tasks
+- **Analyst**: Data analysis and insights tasks
+- **Interviewer**: Question and answer tasks
+- **Programmer**: Code generation and programming tasks
+
+## Dialogue History
+
+Tasks can include dialogue history to provide context for more accurate processing. The history is stored as part of the task and passed to the LLM when processing the task.
+
+## Getting Started
+
+### Prerequisites
+
+- Docker and Docker Compose
 - Python 3.8+
-- Node.js 18+
-- PostgreSQL
-- Redis
-- Docker (optional, for containerization)
-- Ollama (for local LLM support)
+- PostgreSQL (when running without Docker)
+- Redis (when running without Docker)
 
-## Installation
+### Installation
 
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd llm-orchestra-service
+   cd llm_orchestra
    ```
 
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Install UI dependencies:
-   ```bash
-   cd ui/admin
-   npm install  # or pnpm install
-   ```
-
-5. Set up environment variables:
+2. Create a `.env` file based on `.env.example`:
    ```bash
    cp .env.example .env
-   cp ui/admin/.env.example ui/admin/.env
-   ```
-   Edit the `.env` files with your actual configuration values.
-
-## Database Setup
-
-1. Make sure PostgreSQL is running and create the database:
-   ```bash
-   createdb llm_orchestra
    ```
 
-2. Update the `alembic.ini` file with your database connection string:
-   ```
-   sqlalchemy.url = postgresql://username:password@localhost/llm_orchestra
-   ```
+3. Edit the `.env` file to configure your settings:
+   - Database connection details
+   - LLM provider settings (Ollama or OpenAI)
+   - Admin credentials
 
-3. Run Alembic migrations:
-   ```bash
-   alembic upgrade head
-   ```
-
-## LLM Provider Configuration
-
-The service supports multiple LLM providers with Ollama as the default:
-
-### Ollama (Default)
-1. Install Ollama from https://ollama.com/
-2. Pull a model (e.g., llama3):
-   ```bash
-   ollama pull llama3
-   ```
-3. Start the Ollama service:
-   ```bash
-   ollama serve
-   ```
-
-### OpenAI (Alternative)
-1. Get an API key from OpenAI
-2. Set the `OPENAI_API_KEY` environment variable
-3. Set `LLM_PROVIDER=openai` in your environment
-
-### Configuration Variables
-- `LLM_PROVIDER`: The LLM provider to use (default: "ollama")
-- `LLM_MODEL`: The model to use (default: "llama3" for Ollama)
-- `OLLAMA_BASE_URL`: The base URL for Ollama (default: "http://localhost:11434")
-- `OPENAI_API_KEY`: API key for OpenAI (only needed if using OpenAI)
-
-## Running the Application
-
-### Development Mode
-
-1. Start the FastAPI server:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-
-2. Start the Celery worker (in a separate terminal):
-   ```bash
-   celery -A app.tasks.celery_worker.celery_app worker --loglevel=info
-   ```
-
-3. (Optional) Start the Celery beat scheduler for periodic tasks:
-   ```bash
-   celery -A app.tasks.celery_worker.celery_app beat --loglevel=info
-   ```
-
-4. Start the Admin UI (in a separate terminal):
-   ```bash
-   cd ui/admin
-   npm run dev  # or pnpm dev
-   ```
-
-### Using Docker
-
-1. Build and start all services:
+4. Build and start the services:
    ```bash
    docker-compose up --build
    ```
 
-2. The services will be available at:
-   - API: `http://localhost:8000`
-   - Admin UI: `http://localhost:3000`
-   - Database: `http://localhost:5432`
-   - Redis: `http://localhost:6379`
+### Usage
 
-## API Documentation
+1. Access the admin dashboard at `http://localhost:3000`
+2. Log in with the admin credentials configured in your `.env` file
+3. Create tasks using the dashboard or API
+4. Monitor task progress and view results
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+### API Endpoints
 
-## Admin Endpoints
+- **Authentication**: `/api/token` - Obtain access token
+- **Task Management**: 
+  - `POST /api/tasks` - Create a new task
+  - `GET /api/tasks/all` - Get all tasks (admin only)
+  - `GET /api/tasks/{task_id}` - Get task status
+- **Admin Endpoints**:
+  - `GET /api/admin/users` - Get all users
+  - `POST /api/admin/users` - Create a user
+  - `PUT /api/admin/users/{user_id}` - Update a user
+  - `DELETE /api/admin/users/{user_id}` - Delete a user
+  - `GET /api/admin/tasks/all` - Get all tasks
+  - `GET /api/admin/tasks/{task_id}` - Get task details
+  - `DELETE /api/admin/tasks/{task_id}` - Delete a task
+  - `GET /api/admin/stats/tasks/by_status` - Get task statistics by status
+  - `GET /api/admin/stats/tasks/by_type` - Get task statistics by type
 
-The service includes a comprehensive set of admin endpoints for managing users and monitoring tasks:
+## Configuration
 
-### Authentication
-- `POST /token` - Obtain access token with username and password
+The system can be configured through environment variables:
 
-### User Management
-- `GET /users/me` - Get current user information
-- `GET /admin/users` - Get all users (admin only)
-- `POST /admin/users` - Create a new user (admin only)
-- `PUT /admin/users/{user_id}` - Update user details (admin only)
-- `DELETE /admin/users/{user_id}` - Delete a user (admin only)
+- `LLM_PROVIDER`: LLM provider to use (ollama or openai)
+- `LLM_MODEL`: Model name to use
+- `OLLAMA_BASE_URL`: Base URL for Ollama service
+- `OPENAI_API_KEY`: API key for OpenAI (if using OpenAI provider)
+- Database and Redis connection settings
 
-### Task Monitoring
-- `GET /admin/tasks/all` - Get all tasks in the system (admin only)
-- `GET /admin/tasks/{task_id}` - Get details of a specific task (admin only)
+## Development
 
-### Statistics
-- `GET /admin/stats/tasks/by_status` - Get task counts by status (admin only)
-- `GET /admin/stats/tasks/by_type` - Get task counts by type (admin only)
+### Project Structure
 
-## Admin UI
+```
+llm_orchestra/
+├── app/                    # Backend application
+│   ├── api/               # API endpoints
+│   ├── core/              # Core configuration
+│   ├── db/                # Database models and session
+│   ├── schemas/           # Pydantic schemas
+│   ├── services/          # Business logic
+│   └── tasks/             # Celery tasks
+├── ui/                    # Frontend admin dashboard
+├── alembic/               # Database migrations
+├── tests/                 # Test files
+├── docker-compose.yml     # Docker Compose configuration
+├── Dockerfile             # Backend Dockerfile
+├── requirements.txt       # Python dependencies
+└── README.md              # This file
+```
 
-The project includes a web-based admin dashboard built with Next.js that provides a user-friendly interface for:
+### Running Tests
 
-- Managing users (create, update, delete)
-- Monitoring tasks (view status, details)
-- Viewing system statistics
-
-The UI features JWT-based authentication that integrates with the backend API. On first login, use the admin credentials configured in your environment variables.
-
-## Testing Authentication
-
-To test the authentication flow:
-
-1. Start the application using either development mode or Docker
-2. Navigate to `http://localhost:3000` to access the admin UI
-3. Log in with the admin credentials (default: username `admin`, password `admin`)
-4. If you need to test authentication programmatically, you can use the `/token` endpoint directly
-
-## Usage
-
-1. On first startup, an admin user will be automatically created with the credentials from environment variables
-2. Navigate to `http://localhost:3000` to access the admin UI
-3. Log in with the admin credentials
-4. Use the admin panel to manage users and monitor tasks
-5. Create additional users as needed through the admin interface
-
-## Environment Variables
-
-- `DATABASE_URL`: PostgreSQL database connection string
-- `SECRET_KEY`: Secret key for JWT token generation
-- `ALGORITHM`: Algorithm for JWT token encoding
-- `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time
-- `CELERY_BROKER_URL`: Redis URL for Celery broker
-- `CELERY_RESULT_BACKEND`: Redis URL for Celery results
-- `LLM_PROVIDER`: LLM provider to use (default: "ollama")
-- `LLM_MODEL`: Model to use (default: "llama3")
-- `OLLAMA_BASE_URL`: Base URL for Ollama service (default: "http://localhost:11434")
-- `OPENAI_API_KEY`: OpenAI API key for LLM access (only needed if using OpenAI)
-- `ADMIN_USERNAME`: Username for the default admin user (default: admin)
-- `ADMIN_PASSWORD`: Password for the default admin user (default: admin)
-- `NEXT_PUBLIC_API_URL`: API URL for the admin UI (in UI .env file)
-
-## Common Issues and Fixes
-
-1. **Database Connection Issues**: Ensure PostgreSQL is running and the connection string in `.env` is correct.
-
-2. **Redis Connection Issues**: Make sure Redis is running on the specified port (default 6379).
-
-3. **Missing Dependencies**: If you encounter import errors, make sure all dependencies from `requirements.txt` are installed.
-
-4. **Alembic Migrations**: If you modify the database models, generate new migrations:
-   ```bash
-   alembic revision --autogenerate -m "Description of changes"
-   alembic upgrade head
-   ```
-
-5. **LLM Provider Issues**: 
-   - For Ollama: Ensure the Ollama service is running and the specified model is available
-   - For OpenAI: Ensure the API key is valid and has sufficient credits
-
-## Documentation Languages
-
-- [English](README.md)
-- [Русский](README_RU.md)
+```bash
+# Run tests
+python -m pytest tests/
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a pull request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

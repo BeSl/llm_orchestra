@@ -4,6 +4,7 @@ from app.db.session import sync_engine
 from app.db.models import Task, TaskStatus
 from app.services.llm_service import LLMService
 from sqlalchemy.orm import sessionmaker
+import json
 
 # Create a synchronous session for Celery
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
@@ -35,9 +36,17 @@ def process_llm_task(self, task_id: str):
         task.status = TaskStatus.IN_PROGRESS
         db.commit()
 
+        # Parse history from JSON string if it exists
+        history = None
+        if task.history:
+            try:
+                history = json.loads(task.history)
+            except (json.JSONDecodeError, TypeError):
+                history = None
+
         # Инициализация сервиса и запуск задачи
         llm_service = LLMService()  # Updated to use new constructor without API key
-        result = llm_service.run_task(task_type=task.task_type, prompt=task.prompt)
+        result = llm_service.run_task(task_type=task.task_type, prompt=task.prompt, history=history)
 
         # Обновляем статус и результат
         task.result = result
