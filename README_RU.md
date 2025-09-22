@@ -131,7 +131,12 @@ llm_orchestra/
 │   ├── schemas/           # Схемы Pydantic
 │   ├── services/          # Бизнес-логика
 │   └── tasks/             # Задачи Celery
+├── services/              # Микросервисы
+│   ├── orchestrator/      # Оркестратор (Go)
+│   ├── llm/              # LLM сервис (Python)
+│   └── tasks/            # Сервис задач (Go)
 ├── ui/                    # Фронтенд административная панель
+│   └── web/              # Веб-интерфейс администратора
 ├── alembic/               # Миграции базы данных
 ├── tests/                 # Тестовые файлы
 ├── docker-compose.yml     # Конфигурация Docker Compose

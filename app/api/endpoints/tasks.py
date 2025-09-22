@@ -1,5 +1,6 @@
 import uuid
 import json
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
@@ -8,7 +9,6 @@ from sqlalchemy import select
 from app.db.session import get_db
 from app.db.models import Task, User, TaskStatus
 from app.schemas.tasks import TaskCreate, TaskResponse
-from app.tasks.celery_worker import celery_app
 from app.api.deps import get_current_user
 
 router = APIRouter(tags=["tasks"])
@@ -39,11 +39,25 @@ async def create_task(
     await db.commit()
     await db.refresh(db_task)
 
-    # Отправляем задачу в Celery для обработки ONLY after ensuring it's committed
+    # Отправляем задачу в Go сервис для обработки ONLY after ensuring it's committed
     try:
-        celery_app.send_task('app.tasks.celery_worker.process_llm_task', args=[new_task_id])
+        async with httpx.AsyncClient() as client:
+            # Prepare the request data
+            task_data = {
+                "task_type": task_in.task_type,
+                "prompt": task_in.prompt,
+                "history": task_in.history
+            }
+            
+            # Call the Go task service
+            response = await client.post(
+                "http://task-service:8081/tasks",
+                json=task_data,
+                headers={"X-User-ID": str(current_user.id)}
+            )
+            response.raise_for_status()
     except Exception as e:
-        # If Celery fails, we should log the error but not fail the request
+        # If the Go service fails, we should log the error but not fail the request
         print(f"Failed to queue task {new_task_id}: {str(e)}")
 
     return {"task_id": new_task_id, "status": db_task.status}

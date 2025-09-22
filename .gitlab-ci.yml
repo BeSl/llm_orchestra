@@ -1,0 +1,72 @@
+stages:
+  - test
+  - build
+  - docker
+
+variables:
+  DOCKER_DRIVER: overlay2
+  GIT_SUBMODULE_STRATEGY: recursive
+
+default:
+  image: golang:1.22
+  before_script:
+    - go version
+    - go env
+
+go:test:
+  stage: test
+  script:
+    - go mod download
+    - |
+      fmt_out=$(gofmt -l .)
+      if [ -n "$fmt_out" ]; then echo "gofmt would modify:\n$fmt_out"; exit 1; fi
+    - go vet ./...
+    - go build ./...
+
+python:test:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - pip install --no-cache-dir -U pip
+    - pip install --no-cache-dir -r services/llm/requirements.txt pyflakes
+  script:
+    - python -m pyflakes services/llm || true
+    - python -m compileall services/llm
+
+docker:build-orchestrator:
+  stage: docker
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -f docker/orchestrator.Dockerfile -t ${CI_REGISTRY_IMAGE}/orchestrator:${CI_COMMIT_SHORT_SHA} .
+    - |
+      if [ -n "${CI_REGISTRY}" ]; then
+        echo "${CI_REGISTRY_PASSWORD}" | docker login -u "${CI_REGISTRY_USER}" --password-stdin ${CI_REGISTRY}
+        docker push ${CI_REGISTRY_IMAGE}/orchestrator:${CI_COMMIT_SHORT_SHA}
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+docker:build-llm:
+  stage: docker
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -f services/llm/Dockerfile -t ${CI_REGISTRY_IMAGE}/llm:${CI_COMMIT_SHORT_SHA} services/llm
+    - |
+      if [ -n "${CI_REGISTRY}" ]; then
+        echo "${CI_REGISTRY_PASSWORD}" | docker login -u "${CI_REGISTRY_USER}" --password-stdin ${CI_REGISTRY}
+        docker push ${CI_REGISTRY_IMAGE}/llm:${CI_COMMIT_SHORT_SHA}
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+

@@ -1,36 +1,46 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
+  orchestrator:
+    build:
+      context: ./services/orchestrator
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@db:5432/llm_orchestra
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - SECRET_KEY=your-secret-key
-      - LLM_PROVIDER=ollama
+      - DATABASE_URL=postgres://user:password@db:5432/llm_orchestra?sslmode=disable
+      - LLM_SERVICE_URL=http://llm:8082/generate
       - LLM_MODEL=llama3
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      # - OPENAI_API_KEY=your-openai-api-key  # Only needed if using OpenAI
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=admin
     depends_on:
       - db
-      - redis
-    volumes:
-      - .:/app
+      - llm
+
+  llm:
+    build:
+      context: ./services/llm
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+
+  tasks:
+    build:
+      context: ./services/tasks
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
 
   ui:
-    build: ./ui/admin
+    build: ./ui/web
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://web:8000
+      - NEXT_PUBLIC_API_URL=http://orchestrator:8080
     depends_on:
-      - web
+      - orchestrator
 
   db:
     image: postgres:13
@@ -42,32 +52,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:6-alpine
-    ports:
-      - "6379:6379"
-
-  worker:
-    build: .
-    command: celery -A app.tasks.celery_worker.celery_app worker --loglevel=info
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@db:5432/llm_orchestra
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - SECRET_KEY=your-secret-key
-      - LLM_PROVIDER=ollama
-      - LLM_MODEL=codellama:7b
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      # - OPENAI_API_KEY=your-openai-api-key  # Only needed if using OpenAI
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=admin
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - .:/app
 
 volumes:
   postgres_data:

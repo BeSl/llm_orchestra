@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { apiClient, mockApi, type User, type Task, type TaskStats, type TaskTypeStats } from "@/lib/api"
 
 // Custom hook for fetching users
-export function useUsers() {
+export function useUsers(token: string) {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -13,8 +13,7 @@ export function useUsers() {
     try {
       setLoading(true)
       setError(null)
-      // Use mockApi for development, switch to apiClient for production
-      const data = await mockApi.getUsers()
+      const data = await apiClient.getUsers()
       setUsers(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch users")
@@ -34,7 +33,7 @@ export function useUsers() {
   }) => {
     try {
       const newUser = await apiClient.createUser(userData)
-      setUsers((prev) => [...prev, newUser])
+      setUsers((prev: User[]) => [...prev, newUser])
       return newUser
     } catch (err) {
       throw err
@@ -44,7 +43,7 @@ export function useUsers() {
   const updateUser = async (userId: string, updates: Partial<User>) => {
     try {
       const updatedUser = await apiClient.updateUser(userId, updates)
-      setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)))
+      setUsers((prev: User[]) => prev.map((user: User) => (user.id === userId ? updatedUser : user)))
       return updatedUser
     } catch (err) {
       throw err
@@ -54,7 +53,7 @@ export function useUsers() {
   const deleteUser = async (userId: string) => {
     try {
       await apiClient.deleteUser(userId)
-      setUsers((prev) => prev.filter((user) => user.id !== userId))
+      setUsers((prev: User[]) => prev.filter((user: User) => user.id !== userId))
     } catch (err) {
       throw err
     }
@@ -72,7 +71,7 @@ export function useUsers() {
 }
 
 // Custom hook for fetching tasks
-export function useTasks() {
+export function useTasks(token: string) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,8 +80,7 @@ export function useTasks() {
     try {
       setLoading(true)
       setError(null)
-      // Use mockApi for development, switch to apiClient for production
-      const data = await mockApi.getAllTasks()
+      const data = await apiClient.getAllTasks()
       setTasks(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch tasks")
@@ -98,7 +96,7 @@ export function useTasks() {
   const deleteTask = async (taskId: string) => {
     try {
       await apiClient.deleteTask(taskId)
-      setTasks((prev) => prev.filter((task) => task.task_id !== taskId))
+      setTasks((prev: Task[]) => prev.filter((task: Task) => task.id !== taskId))
     } catch (err) {
       throw err
     }
@@ -110,6 +108,41 @@ export function useTasks() {
     error,
     refetch: fetchTasks,
     deleteTask,
+  }
+}
+
+// Custom hook for fetching task stats
+export function useTaskStats(token: string) {
+  const [statsByStatus, setStatsByStatus] = useState<TaskStats | null>(null)
+  const [statsByType, setStatsByType] = useState<TaskTypeStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const statusStats = await apiClient.getTaskStatsByStatus()
+      const typeStats = await apiClient.getTaskStatsByType()
+      setStatsByStatus(statusStats)
+      setStatsByType(typeStats)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch task stats")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
+  return {
+    statsByStatus,
+    statsByType,
+    loading,
+    error,
+    refetch: fetchStats,
   }
 }
 
